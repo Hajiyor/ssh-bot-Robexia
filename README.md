@@ -23,9 +23,6 @@ Perfect for situations where internet access is limited, but Telegram is still a
 ## 📦 Requirements
 
 * Ubuntu 22.04
-* Python 3
-* Stable internet connection
-* Telegram Bot Token
 
 ---
 
@@ -47,25 +44,6 @@ The installer will automatically:
 
 ---
 
-## 📸 How It Works
-
-1. Create your bot using Telegram BotFather
-2. Copy your bot token
-3. Run the install command
-4. Enter token + admin ID
-5. Done ✅
-
----
-
-## 🔐 Security Notes
-
-* Keep your bot token private
-* Use strong server passwords
-* Limit access only to trusted admins
-* Recommended to use firewall rules
-
----
-
 ## 🛠 Commands
 
 | Command  | Description                      |
@@ -80,17 +58,12 @@ The installer will automatically:
 
 If this project helped you, you can support development with a donation.
 
-### 💰 Wallets
+* **TON:** `UQAhWF7xgZuODgzjBZKahSpi_nDisNgjQp-G14fxfCILRaZN`
+* **TRON (TRC20):** `TPWe5ZpnWTzuNZ9EKCCP1MiJeeWzjZsRAM`
 
-* **BTC:** `YOUR_BTC_WALLET`
-* **ETH:** `YOUR_ETH_WALLET`
-* **USDT (TRC20):** `YOUR_USDT_WALLET`
-* **LTC:** `YOUR_LTC_WALLET`
-
-> Replace wallet addresses with your real wallets.
 
 ---
 
 ## 📢 Official Telegram Channel
 
-For updates, news, and future releases:
+For updates, news, and future releases: https://t.me/Robexia
