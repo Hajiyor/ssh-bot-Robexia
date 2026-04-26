@@ -10,7 +10,7 @@ Perfect for situations where internet access is limited, but Telegram is still a
 
 <p align="center">
   <a href="#-features">Features</a> ·
-  <a href="#-quick-install">Quick Install</a> ·
+  <a href="#%EF%B8%8F-quick-install">Quick Install</a> ·
   <a href="#-bot-commands">Bot Commands</a>
 </p>
 
