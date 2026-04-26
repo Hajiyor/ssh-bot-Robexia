@@ -1,7 +1,9 @@
 # 🚀 ssh-bot-Robexia
 
-A powerful Telegram SSH Bot that lets users connect to their servers directly through Telegram.
+A powerful Telegram SSH/SFTP Bot that lets users connect to their servers directly through Telegram.
 Perfect for situations where internet access is limited, but Telegram is still available.
+
+---
 
 ## ✨ Features
 
@@ -15,8 +17,11 @@ Perfect for situations where internet access is limited, but Telegram is still a
 * ⏸ Temporary exit from terminal using `wait`
 * ❌ Fully close terminal using `close`
 * 💤 Auto session close after inactivity
-* 📂 Can be used as SFTP for file management
+* 📂 Built-in SFTP for file management
+* 📤 File upload support (up to 20MB)
 * 🎛 Clean and simple control panel
+* ⌨ Smart shortcut buttons
+* 📝 Dynamic buttons for nano / vim sessions
 
 ---
 
@@ -34,7 +39,7 @@ Run this command on your server:
 bash <(curl -sSL https://raw.githubusercontent.com/Hajiyor/ssh-bot-Robexia/main/install.sh)
 ```
 
-The installer will automatically:
+### Installer will automatically:
 
 * Install all dependencies
 * Ask for your bot token
@@ -44,13 +49,37 @@ The installer will automatically:
 
 ---
 
-## 🛠 Commands
+## 🤖 Bot Commands
 
-| Command  | Description                      |
-| -------- | -------------------------------- |
-| `wait`   | Temporary leave terminal session |
-| `close`  | Fully close terminal             |
-| `/start` | Open bot panel                   |
+| Command     | Description                             |
+| ----------- | --------------------------------------- |
+| `/start`    | Return to main panel                    |
+| `/fast_ssh` | Quick connection (without saving)       |
+| `/my_hosts` | Saved servers (up to 5 hosts)           |
+| `/close`    | Close current session                   |
+| `/wait`     | Background current session (15 minutes) |
+
+---
+
+## 💻 Inside Terminal
+
+* Any text you send → executes as SSH command
+* Buttons provide useful shortcuts
+* When nano / vim is open, buttons change automatically
+
+---
+
+## 📂 SFTP Mode
+
+* Select **SFTP** during quick connection
+* Send files inside session → uploaded automatically
+* Maximum upload size: **20MB**
+
+---
+
+## ⏰ Session Timeout
+
+Inactive sessions are automatically closed after **5 minutes**.
 
 ---
 
@@ -61,9 +90,9 @@ If this project helped you, you can support development with a donation.
 * **TON:** `UQAhWF7xgZuODgzjBZKahSpi_nDisNgjQp-G14fxfCILRaZN`
 * **TRON (TRC20):** `TPWe5ZpnWTzuNZ9EKCCP1MiJeeWzjZsRAM`
 
-
 ---
 
 ## 📢 Official Telegram Channel
 
-For updates, news, and future releases: https://t.me/Robexia
+For updates, news, and future releases:
+https://t.me/Robexia
