@@ -164,7 +164,22 @@ do_install() {
     # ─── Create virtualenv ──────────────────────────────────
     log_step "Setting up Python virtual environment..."
     cd "$INSTALL_DIR"
-    python3 -m venv venv
+
+    # نصب python3-venv بر اساس نسخه پایتون
+    PY_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)")
+    log_info "Installing python3-venv..."
+    apt-get install -y -qq "python3.${PY_MINOR}-venv" 2>/dev/null || \
+        apt-get install -y -qq python3-venv 2>/dev/null || \
+        apt-get install -y "python3-venv" || true
+
+    # ساخت venv
+    rm -rf venv
+    if ! python3 -m venv venv; then
+        log_error "Failed to create virtual environment!"
+        log_error "Try manually: apt install python3.${PY_MINOR}-venv"
+        exit 1
+    fi
+    log_success "Virtual environment created."
     ./venv/bin/pip install --upgrade pip -q
     ./venv/bin/pip install -r requirements.txt -q
     log_success "Dependencies installed."
