@@ -1,13 +1,3 @@
-"""
-database/db.py - Schema و CRUD
-
-جداول:
-- users: کاربران (اجباری Hpanel) + فیلد banned و is_active
-- hosts: سرورهای ذخیره شده
-- app_settings: تنظیمات داخلی
-- ssh_logs: لاگ اتصالات SSH برای آمار
-"""
-
 import aiosqlite
 import sqlite3
 import logging
@@ -25,7 +15,7 @@ def init_db_sync():
     try:
         c = conn.cursor()
 
-        # جدول اجباری Hpanel
+
         c.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
