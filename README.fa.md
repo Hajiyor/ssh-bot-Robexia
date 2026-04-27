@@ -64,6 +64,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/Hajiyor/ssh-bot-Robexia/main/
 | دستور       | توضیحات                           |
 | ----------- | --------------------------------- |
 | `/start`    | بازگشت به پنل اصلی                |
+| `/admin`    | پنل ادمین                       |
 | `/fast_ssh` | اتصال سریع (بدون ذخیره)           |
 | `/my_hosts` | سرورهای ذخیره‌شده (تا 5 سرور)     |
 | `/close`    | بستن سشن فعلی                     |
