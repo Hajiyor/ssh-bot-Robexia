@@ -69,6 +69,9 @@ check_python() {
     if ! command -v python3 &>/dev/null; then
         log_error "Python3 not found. Installing..."
         apt-get update -qq && apt-get install -y python3 python3-pip python3-venv
+    else
+        # مطمئن بشیم python3-venv نصبه
+        python3 -m venv --help &>/dev/null || apt-get install -y -qq python3-venv
     fi
     PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
     log_info "Python version: $PY_VER"
@@ -141,7 +144,7 @@ do_install() {
     log_step "Downloading bot files..."
 
     apt-get update -qq
-    apt-get install -y -qq git curl
+    apt-get install -y -qq git curl python3-venv python3-pip
 
     if [[ -d "$INSTALL_DIR/.git" ]]; then
         log_info "Updating existing files..."
