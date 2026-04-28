@@ -299,6 +299,7 @@ async def handle_sftp_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                 chat_id=chat_id,
                 document=io.BytesIO(data), filename=fname,
                 caption=f"📥 <code>{full}</code>", parse_mode="HTML",
+                read_timeout=120, write_timeout=120, connect_timeout
             )
             await status.delete()
         except Exception as e:
