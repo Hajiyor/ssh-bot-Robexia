@@ -157,7 +157,9 @@ async def handle_sftp_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     if text == "📁 تغییر مسیر":
         context.user_data["sftp_state"] = "await_cd"
         await update.message.reply_html(
-            f"📁 مسیر فعلی: <code>{cur}</code>\n\nمسیر جدید را بفرست:",
+            f"📁 مسیر فعلی: <code>{cur}</code>\n\n"
+            "مسیر جدید را بفرست:\n\n"
+            "💡 <b>نکته:</b> برای ست کردن مسیر حتما از دو اسلش // استفاده کنید: <code>//home</code>",
             reply_markup=CANCEL_MENU,
         )
         return
@@ -299,6 +301,7 @@ async def handle_sftp_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                 chat_id=chat_id,
                 document=io.BytesIO(data), filename=fname,
                 caption=f"📥 <code>{full}</code>", parse_mode="HTML",
+                read_timeout=120, write_timeout=120, connect_timeout
             )
             await status.delete()
         except Exception as e:
