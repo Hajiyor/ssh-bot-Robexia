@@ -68,6 +68,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/Hajiyor/ssh-bot-Robexia/main/
 | `/fast_ssh` | اتصال سریع (بدون ذخیره)           |
 | `/my_hosts` | سرورهای ذخیره‌شده (تا 5 سرور)     |
 | `/close`    | بستن سشن فعلی                     |
+| `/back`     | بازگشت به سشن‌هایی که در حالت wait هستند |
 | `/wait`     | انتقال سشن به پس‌زمینه (15 دقیقه) |
 
 ---
