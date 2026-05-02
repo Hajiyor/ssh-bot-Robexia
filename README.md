@@ -69,6 +69,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/Hajiyor/ssh-bot-Robexia/main/
 | `/fast_ssh` | Quick connection (without saving)       |
 | `/my_hosts` | Saved servers (up to 5 hosts)           |
 | `/close`    | Close current session                   |
+| `/back`     | Return to active sessions in wait state |
 | `/wait`     | Background current session (15 minutes) |
 
 ---
