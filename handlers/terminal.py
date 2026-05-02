@@ -49,11 +49,18 @@ async def terminal_message_handler(update: Update, context: ContextTypes.DEFAULT
         return await close_command(update, context)
     if text == "⏸ /wait":
         return await wait_command(update, context)
+    if text == "🔙 /back":
+        from handlers.back import back_command
+        return await back_command(update, context)
 
     if is_shortcut(text):
         data, needs_buffer = get_shortcut_data(text)
         if data:
-            if needs_buffer:
+            if needs_buffer and text in ("⛔ Ctrl+C", "⏸ Ctrl+Z", "🚪 Ctrl+D"):
+                # raw byte + buffer جدید
+                ok = await manager.send_raw_with_new_buffer(user_id, data)
+            elif needs_buffer:
+                # دستور کامل + buffer جدید (ls, pwd, ...)
                 ok = await manager.send_command_with_new_buffer(user_id, data)
             else:
                 ok = await manager.send_raw(user_id, data)

@@ -13,7 +13,7 @@ TERMINAL_NORMAL = ReplyKeyboardMarkup([
     [KeyboardButton("⛔ Ctrl+C"), KeyboardButton("🚪 Ctrl+D"), KeyboardButton("⏸ Ctrl+Z")],
     [KeyboardButton("↹ Tab"), KeyboardButton("⬆ آخرین دستور"), KeyboardButton("🧹 clear")],
     [KeyboardButton("📂 ls -la"), KeyboardButton("📍 pwd"), KeyboardButton("🏠 cd ~")],
-    [KeyboardButton("⏸ /wait"), KeyboardButton("❌ /close")],
+    [KeyboardButton("⏸ /wait"), KeyboardButton("🔙 /back"), KeyboardButton("❌ /close")],
 ], resize_keyboard=True, is_persistent=True)
 
 TERMINAL_NANO = ReplyKeyboardMarkup([
@@ -76,12 +76,20 @@ SHORTCUT_MAP = {
     "🔍 /": "/", "🔄 n (بعدی)": "n",
 }
 
-# دستوراتی که buffer جدید می‌سازند
+# دستوراتی که buffer جدید می‌سازند (خروجی دارند)
 COMMAND_MAP = {
     "🧹 clear": "clear",
     "📂 ls -la": "ls -la",
     "📍 pwd": "pwd",
     "🏠 cd ~": "cd ~",
+}
+
+# shortcut هایی که بعد از ارسال باید buffer جدید بسازند
+# (چون خروجی جدیدی تولید می‌کنند)
+BUFFERED_RAW = {
+    "⛔ Ctrl+C",   # بعد از توقف دستور، prompt جدید می‌آید
+    "⏸ Ctrl+Z",   # بعد از suspend، prompt می‌آید
+    "🚪 Ctrl+D",   # ممکن است prompt جدید بدهد
 }
 
 
@@ -92,9 +100,11 @@ def is_shortcut(text: str) -> bool:
 def get_shortcut_data(text: str) -> tuple:
     """برمی‌گرداند (data, needs_buffer)"""
     if text in COMMAND_MAP:
-        return COMMAND_MAP[text], True  # نیاز به buffer جدید
+        return COMMAND_MAP[text], True   # دستور با خروجی → buffer جدید
+    if text in BUFFERED_RAW:
+        return SHORTCUT_MAP[text], True  # raw ولی buffer جدید (Ctrl+C و...)
     if text in SHORTCUT_MAP:
-        return SHORTCUT_MAP[text], False  # raw بدون buffer
+        return SHORTCUT_MAP[text], False # raw بدون buffer
     return None, False
 
 

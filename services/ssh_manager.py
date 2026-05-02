@@ -156,13 +156,22 @@ class SSHManager:
 
     async def _reader(self, session: UserSession):
         try:
+            eof_count = 0  # شمارش EOF های متوالی
             while True:
                 try:
                     data = await session.process.stdout.read(4096)
                     if not data:
+                        # EOF دریافت شد
+                        # قبل از قطع، کمی صبر کن شاید سرور دوباره prompt بده
+                        # (برخی سرورها بعد از Ctrl+C مکث کوتاهی دارند)
+                        eof_count += 1
+                        if eof_count < 3:
+                            await asyncio.sleep(0.5)
+                            continue
                         if session.output_mgr:
                             await session.output_mgr.send_system("🔌 <b>سرور اتصال را قطع کرد.</b>")
                         break
+                    eof_count = 0  # reset اگر data دریافت شد
                     session.update_sample(data)
                     new_mode = detect_terminal_mode(session._last_sample)
                     if new_mode != session.terminal_mode:
@@ -209,6 +218,23 @@ class SSHManager:
             return True
         except (BrokenPipeError, ConnectionError, OSError) as e:
             logger.warning(f"Write error: {e}")
+            await self.close_session(user_id)
+            return False
+
+    async def send_raw_with_new_buffer(self, user_id: int, data: str) -> bool:
+        """داده خام + buffer جدید (برای Ctrl+C که prompt جدید می‌آورد)"""
+        session = self.sessions.get(user_id)
+        if not session or session.state != "active":
+            return False
+        try:
+            # اول buffer جدید بساز
+            if session.output_mgr:
+                await session.output_mgr.new_command()
+            session.process.stdin.write(data)
+            session.touch()
+            return True
+        except (BrokenPipeError, ConnectionError, OSError) as e:
+            logger.warning(f"Raw+buffer write: {e}")
             await self.close_session(user_id)
             return False
 

@@ -221,11 +221,17 @@ async def _connect_to_saved_host(update, context, host_id: int, mode: str = "ssh
     if success and mode == "sftp":
         await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="HTML")
         from handlers.sftp import sftp_entry
-        await sftp_entry(context, user_id, chat_id)
+        await sftp_entry(context, user_id, chat_id, host_id=host_id)
     else:
         from keyboards.terminal_kb import TERMINAL_NORMAL
         from handlers.sftp import SSH_CONNECTED_HELP
         if success:
+            # ذخیره last host برای /back
+            try:
+                from database.db import save_last_host_id
+                await save_last_host_id(user_id, host_id)
+            except Exception:
+                pass
             full_msg = msg + "\n\n" + SSH_CONNECTED_HELP
         else:
             full_msg = msg

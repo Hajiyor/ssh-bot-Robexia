@@ -2,15 +2,14 @@
 bot.py - ssh-bot-Robexia v1.0
 https://github.com/Hajiyor/ssh-bot-Robexia
 
-A Telegram SSH/SFTP client bot - Run SSH sessions directly from Telegram.
+A Telegram SSH/SFTP client bot.
+Run SSH sessions directly from Telegram.
 """
 
 import asyncio
 import logging
 import os
 import sys
-import json
-import time
 from logging.handlers import RotatingFileHandler
 
 from telegram import Update
@@ -25,7 +24,7 @@ import config
 
 
 def setup_logging():
-    os.makedirs(os.path.dirname(config.LOG_FILE), exist_ok=True)
+    os.makedirs(config.DATA_DIR, exist_ok=True)
     level = getattr(logging, config.LOG_LEVEL.upper(), logging.INFO)
     fmt = logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -52,7 +51,7 @@ def setup_logging():
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# ─── validate config ──────────────────────────────────────────────
+# بررسی تنظیمات ضروری
 if not config.TOKEN:
     logger.error("BOT_TOKEN is not set! Check your .env file.")
     sys.exit(1)
@@ -70,20 +69,17 @@ from handlers import my_hosts as h_hosts
 from handlers import terminal as h_term
 from handlers import admin as h_admin
 from handlers import sftp as h_sftp
-from handlers.stats import stats_reporter
-
-# ─── stats reporter (Hpanel compatible) ──────────────────────────
-_msg_history = []
+from handlers import back as h_back
 
 
 async def maintenance_ban_middleware(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Middleware: maintenance mode and ban check"""
+    """بررسی maintenance mode و بن قبل از هر handler"""
     if not update.effective_user:
         return
 
     uid = update.effective_user.id
     if uid in config.ADMIN_IDS:
-        return  # Admin always has access
+        return
 
     cfg = load_settings()
     if cfg.get("maintenance", False):
@@ -118,19 +114,20 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def post_init(app: Application) -> None:
-    logger.info("Initializing ssh-bot-Robexia v1.0...")
+    logger.info("Starting ssh-bot-Robexia v1.0...")
+
     mgr = ssh_manager.init_manager(app.bot)
     await mgr.start_watchdog()
-    asyncio.create_task(stats_reporter())
 
     from telegram import BotCommand
     await app.bot.set_my_commands([
-        BotCommand("start", "Back to main panel"),
-        BotCommand("help", "Help & Guide"),
-        BotCommand("fast_ssh", "Quick SSH connection"),
-        BotCommand("my_hosts", "Saved servers"),
-        BotCommand("close", "Close current session"),
-        BotCommand("wait", "Background session"),
+        BotCommand("start",    "بازگشت به پنل اصلی"),
+        BotCommand("help",     "راهنما"),
+        BotCommand("fast_ssh", "اتصال سریع SSH"),
+        BotCommand("my_hosts", "سرورهای ذخیره شده"),
+        BotCommand("close",    "قطع session"),
+        BotCommand("wait",     "بک‌گراند کردن session"),
+        BotCommand("back",     "بازگشت به session قبلی"),
     ])
     logger.info("Bot ready.")
 
@@ -144,8 +141,8 @@ async def post_shutdown(app: Application) -> None:
 
 
 def main() -> None:
-    logger.info(f"Starting ssh-bot-Robexia v1.0")
-    os.makedirs(os.path.dirname(config.DB_PATH), exist_ok=True)
+    logger.info("Starting ssh-bot-Robexia v1.0")
+    os.makedirs(config.DATA_DIR, exist_ok=True)
     init_db_sync()
     ensure_default_settings()
 
@@ -158,7 +155,7 @@ def main() -> None:
         .build()
     )
 
-    # Middleware
+    # Middleware (اجرا قبل از همه handler ها)
     app.add_handler(TypeHandler(Update, maintenance_ban_middleware), group=-1)
     app.add_error_handler(error_handler)
 
@@ -173,13 +170,13 @@ def main() -> None:
     # /admin
     app.add_handler(h_admin.build_admin_handler())
 
-    # fast_ssh
+    # /fast_ssh
     app.add_handler(h_fast.build_fast_ssh_handler())
 
-    # SFTP delete callback
+    # SFTP callbacks
     app.add_handler(CallbackQueryHandler(h_sftp.sftp_delete_callback, pattern=r"^sftp_del:"))
 
-    # my_hosts
+    # /my_hosts
     for h in h_hosts.build_my_hosts_command_handler():
         app.add_handler(h)
     app.add_handler(h_hosts.build_add_host_handler())
@@ -189,14 +186,16 @@ def main() -> None:
         pattern=r"^(host_list|host_view:|host_connect:|host_delete:|host_delete_confirm:|host_edit:)",
     ))
 
-    # /close, /wait
+    # /close, /wait, /back
     app.add_handler(CommandHandler("close", h_term.close_command))
-    app.add_handler(CommandHandler("wait", h_term.wait_command))
+    app.add_handler(CommandHandler("wait",  h_term.wait_command))
+    app.add_handler(CommandHandler("back",  h_back.back_command))
+    app.add_handler(h_back.build_back_callback())
 
-    # File upload → SFTP
+    # فایل → SFTP upload
     app.add_handler(MessageHandler(filters.Document.ALL, h_term.document_handler))
 
-    # Text messages → terminal
+    # پیام متنی → terminal (باید آخرین باشد)
     app.add_handler(MessageHandler(
         filters.TEXT & ~filters.COMMAND,
         h_term.terminal_message_handler,

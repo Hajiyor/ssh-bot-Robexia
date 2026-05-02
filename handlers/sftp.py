@@ -91,6 +91,15 @@ async def show_dir(context: ContextTypes.DEFAULT_TYPE, user_id: int, chat_id: in
     context.user_data["sftp_path"] = real_path
     context.user_data["sftp_state"] = "browse"
 
+    # ذخیره آخرین مسیر اگر host_id داریم
+    host_id = context.user_data.get("sftp_host_id")
+    if host_id:
+        try:
+            from database.db import save_sftp_last_path
+            await save_sftp_last_path(user_id, host_id, real_path)
+        except Exception:
+            pass
+
     lines = [f"📂 <code>{real_path}</code>\n"]
     dirs = [i for i in items if i['is_dir']]
     files = [i for i in items if not i['is_dir']]
@@ -112,14 +121,30 @@ async def show_dir(context: ContextTypes.DEFAULT_TYPE, user_id: int, chat_id: in
     )
 
 
-async def sftp_entry(context: ContextTypes.DEFAULT_TYPE, user_id: int, chat_id: int):
+async def sftp_entry(context: ContextTypes.DEFAULT_TYPE, user_id: int, chat_id: int,
+                     host_id: int = None):
     """ورود به SFTP - از my_hosts یا fast_ssh فراخوانی می‌شود"""
-    enter_sftp(context, ".")
+    # بارگذاری آخرین مسیر اگر host_id داریم (my_hosts)
+    start_path = "."
+    if host_id:
+        context.user_data["sftp_host_id"] = host_id
+        try:
+            from database.db import get_sftp_last_path
+            saved_path = await get_sftp_last_path(user_id, host_id)
+            if saved_path and saved_path != ".":
+                start_path = saved_path
+        except Exception:
+            pass
+    else:
+        # fast_ssh - مسیر ذخیره نمیشه
+        context.user_data.pop("sftp_host_id", None)
+
+    enter_sftp(context, start_path)
     await context.bot.send_message(
         chat_id=chat_id, text=SFTP_HELP,
         parse_mode="HTML", reply_markup=SFTP_MENU,
     )
-    await show_dir(context, user_id, chat_id, ".")
+    await show_dir(context, user_id, chat_id, start_path)
 
 
 async def handle_sftp_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -149,8 +174,6 @@ async def handle_sftp_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     if text == "🏠 Home" or text == "🏠 برگشت به home":
-        await show_dir(context, user_id, chat_id, "/root" if True else "~")
-        # بهتره مستقیم ~ بدیم
         await show_dir(context, user_id, chat_id, "~")
         return
 
@@ -159,7 +182,7 @@ async def handle_sftp_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_html(
             f"📁 مسیر فعلی: <code>{cur}</code>\n\n"
             "مسیر جدید را بفرست:\n\n"
-            "💡 <b>نکته:</b> برای ست کردن مسیر حتما از دو اسلش // استفاده کنید: <code>//home</code>",
+            "💡 <b>نکته:</b> برای مسیر مطلق از // استفاده کنید: <code>//home</code> یا <code>//var/www</code>",
             reply_markup=CANCEL_MENU,
         )
         return
@@ -286,7 +309,11 @@ async def handle_sftp_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     if state == "await_download":
-        full = posixpath.join(cur, text)
+        # // برای مسیر مطلق
+        if text.startswith('//'):
+            full = text[1:]  # // → /
+        else:
+            full = posixpath.join(cur, text)
         status = await update.message.reply_html(f"⏳ دانلود <code>{text}</code>...")
         ok, data, fname = await manager.sftp_download(user_id, full)
         if not ok:
@@ -301,7 +328,7 @@ async def handle_sftp_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                 chat_id=chat_id,
                 document=io.BytesIO(data), filename=fname,
                 caption=f"📥 <code>{full}</code>", parse_mode="HTML",
-                read_timeout=120, write_timeout=120, connect_timeout
+                read_timeout=120, write_timeout=120, connect_timeout=30,
             )
             await status.delete()
         except Exception as e:
@@ -311,7 +338,13 @@ async def handle_sftp_message(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     # ─── هر متن دیگری = cd به اون مسیر ─────────────────────────
     if state == "browse":
-        new_path = text if text.startswith('/') else posixpath.join(cur, text)
+        # // برای مسیر مطلق
+        if text.startswith('//'):
+            new_path = text[1:]
+        elif text.startswith('/'):
+            new_path = text
+        else:
+            new_path = posixpath.join(cur, text)
         await show_dir(context, user_id, chat_id, new_path)
         return
 
