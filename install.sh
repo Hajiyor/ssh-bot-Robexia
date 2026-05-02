@@ -289,28 +289,59 @@ do_update() {
         return
     fi
 
-    # بکاپ از .env
+    # بکاپ از فایل‌های مهم کاربر
+    log_info "Backing up user data..."
     cp "$ENV_FILE" /tmp/robexia_env_backup 2>/dev/null || true
+    cp "$INSTALL_DIR/settings.json" /tmp/robexia_settings_backup 2>/dev/null || true
+    cp -r "$INSTALL_DIR/data" /tmp/robexia_data_backup 2>/dev/null || true
 
     log_info "Stopping bot..."
     systemctl stop "$SERVICE_NAME" 2>/dev/null || true
 
     log_info "Downloading latest version..."
     cd "$INSTALL_DIR"
+
     if [[ -d ".git" ]]; then
+        # حفظ تغییرات local و pull
+        git stash 2>/dev/null || true
         git pull origin main
+        # اگر stash داشتیم، pop نکن - فایل‌های کاربر رو از backup بازیابی می‌کنیم
     else
-        curl -sSL "$REPO/archive/refs/heads/main.tar.gz" | tar xz --strip-components=1
+        # دانلود مستقیم و جایگزینی فقط فایل‌های کد (نه data)
+        TMPDIR=$(mktemp -d)
+        curl -sSL "$REPO/archive/refs/heads/main.tar.gz" | tar xz --strip-components=1 -C "$TMPDIR"
+        # کپی فقط فایل‌های کد (نه settings.json و data)
+        for item in "$TMPDIR"/*; do
+            name=$(basename "$item")
+            if [[ "$name" != "data" && "$name" != "settings.json" && "$name" != ".env" ]]; then
+                rm -rf "$INSTALL_DIR/$name"
+                cp -r "$item" "$INSTALL_DIR/$name"
+            fi
+        done
+        rm -rf "$TMPDIR"
     fi
 
-    # بازیابی .env
+    # بازیابی فایل‌های کاربر
+    log_info "Restoring user configuration..."
     if [[ -f /tmp/robexia_env_backup ]]; then
         cp /tmp/robexia_env_backup "$ENV_FILE"
         chmod 600 "$ENV_FILE"
         rm -f /tmp/robexia_env_backup
     fi
+    if [[ -f /tmp/robexia_settings_backup ]]; then
+        cp /tmp/robexia_settings_backup "$INSTALL_DIR/settings.json"
+        rm -f /tmp/robexia_settings_backup
+    fi
+    if [[ -d /tmp/robexia_data_backup ]]; then
+        cp -rn /tmp/robexia_data_backup/. "$INSTALL_DIR/data/" 2>/dev/null || true
+        rm -rf /tmp/robexia_data_backup
+    fi
 
-    log_info "Updating dependencies..."
+    # حذف pycache های قدیمی
+    find "$INSTALL_DIR" -name "*.pyc" -delete 2>/dev/null || true
+    find "$INSTALL_DIR" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+
+    log_info "Updating Python dependencies..."
     ./venv/bin/pip install -r requirements.txt -q
 
     log_info "Starting bot..."
@@ -318,11 +349,10 @@ do_update() {
 
     sleep 3
     if systemctl is-active --quiet "$SERVICE_NAME"; then
-        log_success "Bot updated and running!"
-        NEW_VER=$(grep -r "v[0-9]\+\.[0-9]\+" "$INSTALL_DIR/bot.py" 2>/dev/null | head -1 | grep -oP 'v\d+\.\d+' | head -1)
-        [[ -n "$NEW_VER" ]] && log_info "Version: $NEW_VER"
+        NEW_VER=$(grep -oP "v\d+\.\d+" "$INSTALL_DIR/bot.py" 2>/dev/null | head -1)
+        log_success "Bot updated and running! ${NEW_VER}"
     else
-        log_error "Bot failed to start after update! Check logs:"
+        log_error "Bot failed to start after update!"
         echo -e "  ${CYAN}tail -50 $INSTALL_DIR/data/bot.log${NC}"
     fi
 }
